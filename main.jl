@@ -7,7 +7,7 @@ function loadMatrix(s)
 end
 
 function backward(l_,d_,u_,rhs_,p_)
-    for i = length(rhs_)-1:-1:1 
+    for i = length(rhs_):-1:2
         factor = l_[i] / d_[i];
         d_[p_[i]+1]   -= factor * u_[i];
         rhs_[p_[i]+1] -= factor * rhs_[i];
@@ -19,22 +19,42 @@ end
 function forward(l_,d_,u_,rhs_,p_)
     rhs_[1] /= d_[1]
     for i = 2:length(rhs_)
-        rhs_[p_[i]+1] -= u_[i] * rhs_[i];
-        rhs_[p_[i]+1] /= d_[i];
+        rhs_[i] -= u_[i] * rhs_[p_[i]+1];
+        rhs_[i] /= d_[i];
     end
 end
 
-matrix = loadMatrix("matrix.json")
-#println(matrix["rhs"])
+function error(out,sol)
+    error = Array{Float64}(length(out));
+    for i=1:length(out)
+        error[i]=sol[i]-out[i];
+    end
+    return error;
+end
 
-#backward(matrix["l"],matrix["d"],matrix["u"],matrix["rhs"],matrix["p"])
-#println(matrix["rhs"])
+function HMCheck(cell_file)
 
-forward(matrix["l"],matrix["d"],matrix["u"],matrix["rhs"],matrix["p"])
-println(matrix["rhs"])
+    control = true;
+    matrix = loadMatrix(cell_file);
+    backward(matrix["l"],matrix["d"],matrix["u"],matrix["rhs_"],matrix["p"])
+    forward(matrix["l"],matrix["d"],matrix["u"],matrix["rhs_"],matrix["p"])
+    verror = error(matrix["rhs_"],matrix["sol"])
+    for i=1:length(verror)
+        if abs(verror[i]) > 5.0e-9
+            println("The solution is not correct based on our precision requeriments");
+            control = false;
+            break;
+        end
+    end
+    if control
+        println("TEST PASSED")
+    else 
+        println("TEST FAILED")
+    end
+end
 
-println(matrix["v"])
 
+HMCheck("matrix_1_cell.json")
 
 
 
